@@ -29,20 +29,28 @@ function getJson(uri, req, res) {
 			if (!error && response.statusCode == 200) {
 				//console.log(body);
 			var safeHtml = stripJs(body);
+			
+			var fin = safeHtml.replace(/&#xE4;/g,'ä').replace(/&#xF6;/g,'ö');
+			//console.log(fin);
 			//console.log(safeHtml.replace("&#xE4;","ä").replace("&#xF6;","ö"));
 			var parser = new DomParser();			
-			var dom = parser.parseFromString(safeHtml);
+			var dom = parser.parseFromString(fin);
 			var text = dom.getElementsByTagName('body')[0].textContent;
 			//console.log(text);
-			var wordList = text.replace(/[0-9]/g,'').replace(/[.,:#$-/{}()! ]/g,' ').replace(/\s+/g,' ').split(" ");
+			var wordList = text.replace(/[0-9]/g,'').replace(/[.,:;#$-/{}()! ]/g,' ').replace(/\s+/g,' ').split(" ");
 			//console.log(wordList);
 			var  count = {};
+			var excludes = ['size','center','bottom','html','block','display','overflow','serif','bold','black','"Arial"','"Helvetica"','"HelsinginText"','"Georgia"','"SanomatSlab"','background','subscription','white','align','border','hidden','padding','padding','margin','grid','xAD','none','text','item','font','width','color',];
 			wordList.forEach(function(i) { 
-				count[i] = (count[i]||0) + 1;});
+				if ((i.length > 2)&&(!excludes.includes(i))) {
+					count[i] = (count[i]||0) + 1;
+				}
+				
+			});
 				var sortedList = {};
 				Object.keys(count).sort((a,b) => count[a]-count[b]).forEach((key) => {
 					sortedList[key] = count[key]; });
-			console.log(sortedList);
+			//console.log(sortedList);
 			res.send(sortedList);
 			} else {
 			console.log(error);

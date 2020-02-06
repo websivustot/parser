@@ -9,6 +9,32 @@ const MongoStore = require("connect-mongo")(session);
 const request = require("request");
 var DomParser = require('dom-parser');
 var stripJs = require('strip-js');
+var iconv  = require('iconv-lite');
+// Imports the Google Cloud client library
+//const {Translate} = require('@google-cloud/translate').v2;
+
+// Creates a client
+//const translate = new Translate();
+
+/**
+ * TODO(developer): Uncomment the following lines before running the sample.
+ */
+/* const text = 'The text to translate, e.g. Hello, world!';
+ const target = 'The target language, e.g. ru';
+
+async function translateText() {
+	// Translates the text into the target language. "text" can be a string for
+	// translating a single piece of text, or an array of strings for translating
+	// multiple texts.
+	let [translations] = await translate.translate(text, target);
+	translations = Array.isArray(translations) ? translations : [translations];
+	console.log('Translations:');
+	translations.forEach((translation, i) => {
+	  console.log(`${text[i]} => (${target}) ${translation}`);
+	});
+  }
+  
+  translateText();*/
 
 let app = express();
 
@@ -20,30 +46,36 @@ app.use(bodyParser.json());
 
 app.use(express.static(__dirname+"/static"));
 
-function getJson(uri, req, res) {
-	
-	request(
-		{ uri: uri },
+function getJson(uri, req, res) {	
+
+	var requestOptions  = { encoding: null, method: "GET", uri: uri, timeout: 2000};
+
+	request( requestOptions,
+		
 		function(error, response, body) {
 
 			if (!error && response.statusCode == 200) {
-				//console.log(body);
-			var safeHtml = stripJs(body);
+				var utf8String = iconv.decode(new Buffer.from(body), "ISO-8859-1");
+				//console.log(utf8String);
 			
-			var fin = safeHtml.replace(/&#xE4;/g,'ä').replace(/&#xF6;/g,'ö');
+				
+			var safeHtml = stripJs(utf8String);
+			//console.log(safeHtml);
+			var fin = safeHtml.replace(/&#xC3;&#xA4;/g,'ä').replace(/&#xC3;&#xB6;/g,'ö').replace(/&#xE4;/g,'ä').replace(/&#xF6;/g,'ö').replace(/&#xC4;/g,'Ä').replace(/&#xD6;/g,'Ö');
 			//console.log(fin);
 			//console.log(safeHtml.replace("&#xE4;","ä").replace("&#xF6;","ö"));
 			var parser = new DomParser();			
 			var dom = parser.parseFromString(fin);
 			var text = dom.getElementsByTagName('body')[0].textContent;
-			//console.log(text);
-			var wordList = text.replace(/[0-9]/g,'').replace(/[.,:;#$-/{}()! ]/g,' ').replace(/\s+/g,' ').split(" ");
+			var links = dom.getElementsByTagName("A")[0];
+			console.log("linkcontent", links.getElementsByTagName("A")[0]);
+			var wordList = text.replace(/[0-9]/g,'').replace(/[.,:;#$-/{}()!?=" ]/g,' ').replace(/\s+/g,' ').split(" ");
 			//console.log(wordList);
 			var  count = {};
 			var excludes = ['size','center','bottom','html','block','display','overflow','serif','bold','black','"Arial"','"Helvetica"','"HelsinginText"','"Georgia"','"SanomatSlab"','background','subscription','white','align','border','hidden','padding','padding','margin','grid','xAD','none','text','item','font','width','color',];
 			wordList.forEach(function(i) { 
-				if ((i.length > 2)&&(!excludes.includes(i))) {
-					count[i] = (count[i]||0) + 1;
+				if ((i.length > 2)&&(!excludes.includes(i))) {					
+					count[i.toLowerCase()] = (count[i.toLowerCase()]||0) + 1;
 				}
 				
 			});
@@ -51,7 +83,8 @@ function getJson(uri, req, res) {
 				Object.keys(count).sort((a,b) => count[a]-count[b]).forEach((key) => {
 					sortedList[key] = count[key]; });
 			//console.log(sortedList);
-			res.send(sortedList);
+			var index = { list: sortedList, links: links}
+			res.send(index);
 			} else {
 			console.log(error);
 			}

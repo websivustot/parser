@@ -1,8 +1,6 @@
 import React from 'react';
 import { Form, FormGroup, Input, Button, Label } from 'reactstrap';
 
-
-
 class Card extends React.Component {
 
     constructor(props) {
@@ -11,7 +9,8 @@ class Card extends React.Component {
         this.handleSubmit = this.handleSubmit.bind(this);
 
         this.state = {
-            list:[]            
+            list:[],
+            links:[]            
         }
       }
 
@@ -29,34 +28,15 @@ class Card extends React.Component {
         fetch("/card", getObject)
         .then((response) => {
             //console.log(response.body);
-            response.json().then(data => {
-                // do something with your data
+            response.json().then(data => {                
                 //console.log("data", data);
-                this.setState({list: data});
+                this.setState({list: data.list, links: data.links });
               });
             return response;
-        })/*
-        .then((myJson) => {
-            myJson.json().then(data => {
-                // do something with your data
-                console.log("data", data);
-              });
-            
-        })*/;
-        //console.log('URL: ' + this.url.value);
+        })
     }    
      
-    render() {
-        var obj = this.state.list;
-        const list = Object.keys(obj).forEach(function (item, index) {
-            console.log(item, obj[item])
-        return <p>{item}</p>
-    });
-
-
-        
-
-         console.log(list);
+    render() {       
 
       	return (
             <div className="container">
@@ -67,7 +47,14 @@ class Card extends React.Component {
               
                 <Button type="submit" value="submit" className="bg-primary">Send</Button>                        
             </Form>
-            {list}
+            <div class="row">
+            { (Object.keys(this.state.list)).slice(0).reverse().map((item,index) =>(
+                <div class="col-3" key={index}>
+                    {item} - {this.state.list[item]}
+                </div>
+            )) }
+            </div>
+            
             </div>
         );
     }

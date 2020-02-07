@@ -66,9 +66,23 @@ function getJson(uri, req, res) {
 			//console.log(safeHtml.replace("&#xE4;","ä").replace("&#xF6;","ö"));
 			var parser = new DomParser();			
 			var dom = parser.parseFromString(fin);
+			var links = dom.getElementsByTagName("a");
 			var text = dom.getElementsByTagName('body')[0].textContent;
-			var links = dom.getElementsByTagName("A")[0];
-			console.log("linkcontent", links.getElementsByTagName("A")[0]);
+			var a = [];	
+			links.forEach(item => {
+				var attrs = item.attributes;									
+				attrs.forEach(attr => {					
+					if (attr.name === 'href') {	
+						if (!a.includes(attr.value)) {
+							a.push(attr.value);	
+						}					
+												
+					}					
+				});				
+			})
+			//console.log(links[0].attributes);
+			//console.log("linkcontent", links[0].attributes);
+			console.log(a);
 			var wordList = text.replace(/[0-9]/g,'').replace(/[.,:;#$-/{}()!?=" ]/g,' ').replace(/\s+/g,' ').split(" ");
 			//console.log(wordList);
 			var  count = {};
@@ -76,14 +90,13 @@ function getJson(uri, req, res) {
 			wordList.forEach(function(i) { 
 				if ((i.length > 2)&&(!excludes.includes(i))) {					
 					count[i.toLowerCase()] = (count[i.toLowerCase()]||0) + 1;
-				}
-				
+				}				
 			});
 				var sortedList = {};
 				Object.keys(count).sort((a,b) => count[a]-count[b]).forEach((key) => {
 					sortedList[key] = count[key]; });
 			//console.log(sortedList);
-			var index = { list: sortedList, links: links}
+			var index = { list: sortedList, links: a}
 			res.send(index);
 			} else {
 			console.log(error);
